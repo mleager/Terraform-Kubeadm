@@ -17,7 +17,7 @@ variable "instance_type" {
 }
 
 variable "user_data" {
-  default     = "scripts/1-ubuntu.sh"
+  default     = "scripts/3-ubuntu.sh"
   type        = string
-  description = "User Data script location. Default is [ scripts/1-ubuntu.sh ]"
+  description = "User Data script location. Default is [ scripts/3-ubuntu.sh ]"
 }
