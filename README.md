@@ -10,3 +10,5 @@
 - Install CRI [ containerd.io ]
 - Install Kubeadm, Kubelet & Kubectl
 - Install CNI [ Cilium ]
+
+#### User Data script at "scripts/3-ubuntu.sh"
