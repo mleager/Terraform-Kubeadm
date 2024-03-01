@@ -5,8 +5,12 @@ echo "controlplane" | sudo tee /etc/hostname
 sudo hostnamectl set-hostname controlplane
 
 # 1b. Get Host IP and create DNS alias for CP
-CP_IP=$(hostname -i)
-sudo sed -i "2i\\$CP_IP k8scp" /etc/hosts
+CP_IP=$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d '/' -f1)
+sudo sed -i "1i\\$CP_IP k8scp" /etc/hosts
+
+# 1c. Create Directory for Configs (if using SSM, default $home is "/home/ssm-user")
+home=/home/user
+sudo mkdir $home
 
 # 2. Prerequisites
 sudo apt-get update
@@ -14,7 +18,7 @@ sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 
 sudo swapoff -a
 sudo modprobe overlay
-sudo modprobebr_netfiliter
+sudo modprobe br_netfilter
 
 sudo tee /etc/sysctl.d/kubernetes.conf <<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -60,8 +64,8 @@ rm cilium-linux-amd64.tar.gz
 
 #### Configs and Commands ####
 
-# 6. Add ClusterConfiguration to Home Directory
-sudo tee $HOME/kubeadm-config.yaml <<EOF
+# 7. Add ClusterConfiguration to "$home" Directory
+sudo tee $home/kubeadm-config.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 kubernetesVersion: v1.29.2
@@ -70,20 +74,44 @@ networking:
   podSubnet: "10.244.0.0/16"
 EOF
 
-# 7. Kubeadm Init Command
-sudo tee $HOME/kubeadm-init.yaml <<EOF
-kubeadm init --config=$HOME/kubeadm-config.yaml --node-name=controlplane --upload-certs | sudo tee $HOME/kubeadm-init.out
+# 8. Kubeadm Init Command
+sudo tee $home/kubeadm-init.txt <<EOF
+kubeadm init --config=$home/kubeadm-config.yaml --node-name=controlplane --upload-certs | sudo tee $home/kubeadm-init.out
 EOF
 
-# 8. Install Cilium
-sudo tee $HOME/cilium-install.txt <<EOF
-cilium install --version 1.15.1
-cilium connectivity test
+# 9. Install Cilium
+sudo tee $home/cilium-install.txt <<EOF
+cilium install
+(Optional) cilium connectivity test
 EOF
 
-# 9. Install Bash Completion
-sudo tee $HOME/bash-completion.txt <<EOF
+# 10. Install Bash Completion
+sudo tee $home/bash-completion.txt <<EOF
+# Bash Completion
 sudo apt-get install -y bash-completion
 source <(kubectl completion bash)
-echo "source <(kubectl completion bash)" >> $HOME/.bashrc
+echo "source <(kubectl completion bash)" >> $home/.bashrc
+
+# Kubectl Alias & Autocomplete
+alias k=kubectl
+complete -o default -F __start_kubectl k
+EOF
+
+## 11. Instructions
+sudo tee $home/instructions.txt <<EOF
+1. (Optional) Confirm hostname and IP Address are listed in "/etc/hostname" and "/etc/hosts" respectively
+2. Confirm Kubeadm, Kubelet, and Kubectl and installed
+$ kubeadm version
+$ kubectl version
+$ kubelet --version
+3. Confirm containerd is installed and running
+$ sudo systemctl status containerd
+4. Confirm or configure "kubeadm-config.yaml"
+5. Run command in "kubeadm-init.txt"
+6. Follow instructions after succesful init (will also be output to "kubeadm-init.out")
+7. Run command in "cilium-install.txt"
+8. (Optional) Run commands in "bash-completion.txt"
+9. Confirm you can access the Cluster and that CoreDNS & Cilium are working
+$ kubectl -n kube-system get pods
+10. Create a Pod to ensure Cluster is functioning properly
 EOF
