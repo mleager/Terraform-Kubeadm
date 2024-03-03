@@ -8,10 +8,6 @@ sudo hostnamectl set-hostname controlplane
 CP_IP=$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d '/' -f1)
 sudo sed -i "1i\\$CP_IP k8scp" /etc/hosts
 
-# 1c. Create Directory for Configs (if using SSM, default $home is "/home/ssm-user")
-home=/home/user
-sudo mkdir $home
-
 # 2. Prerequisites
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
@@ -64,8 +60,8 @@ rm cilium-linux-amd64.tar.gz
 
 #### Configs and Commands ####
 
-# 7. Add ClusterConfiguration to "$home" Directory
-sudo tee $home/kubeadm-config.yaml <<EOF
+# 7. Add ClusterConfiguration to "$HOME" Directory
+sudo tee $HOME/kubeadm-config.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 kubernetesVersion: v1.29.2
@@ -75,22 +71,22 @@ networking:
 EOF
 
 # 8. Kubeadm Init Command
-sudo tee $home/kubeadm-init.txt <<EOF
-kubeadm init --config=$home/kubeadm-config.yaml --node-name=controlplane --upload-certs | sudo tee $home/kubeadm-init.out
+sudo tee $HOME/kubeadm-init.txt <<EOF
+kubeadm init --config=$HOME/kubeadm-config.yaml --node-name=controlplane --upload-certs | sudo tee $HOME/kubeadm-init.out
 EOF
 
 # 9. Install Cilium
-sudo tee $home/cilium-install.txt <<EOF
+sudo tee $HOME/cilium-install.txt <<EOF
 cilium install
 (Optional) cilium connectivity test
 EOF
 
 # 10. Install Bash Completion
-sudo tee $home/bash-completion.txt <<EOF
+sudo tee $HOME/bash-completion.txt <<EOF
 # Bash Completion
 sudo apt-get install -y bash-completion
 source <(kubectl completion bash)
-echo "source <(kubectl completion bash)" >> $home/.bashrc
+echo "source <(kubectl completion bash)" >> $HOME/.bashrc
 
 # Kubectl Alias & Autocomplete
 alias k=kubectl
@@ -98,7 +94,7 @@ complete -o default -F __start_kubectl k
 EOF
 
 ## 11. Instructions
-sudo tee $home/instructions.txt <<EOF
+sudo tee $HOME/instructions.txt <<EOF
 1. (Optional) Confirm hostname and IP Address are listed in "/etc/hostname" and "/etc/hosts" respectively
 2. Confirm Kubeadm, Kubelet, and Kubectl and installed
 $ kubeadm version
